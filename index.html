@@ -1915,10 +1915,10 @@ window.addEventListener('load',()=>{const d=document.getElementById('ccrDate');i
       <div class="lp-ai-panel">
         <div class="lp-ai-row">
           <div>
-            <div class="lp-ai-title">✨ AI Lesson Plan Generator</div>
-            <div class="lp-ai-sub">Enter Class, Subject and Chapter Name, then generate the remaining lesson-plan content automatically. You can edit everything before saving or printing.</div>
+            <div class="lp-ai-title">✨ Smart Lesson Plan Generator — No API</div>
+            <div class="lp-ai-sub">Enter Class, Subject and Chapter Name. The app will create a complete lesson plan locally — no API key, internet, or paid service required. You can edit everything before saving or printing.</div>
           </div>
-          <button type="button" class="lp-ai-btn" id="lpAIGenerateBtn" onclick="lpGenerateAI()">✨ Generate with AI</button>
+          <button type="button" class="lp-ai-btn" id="lpAIGenerateBtn" onclick="lpGenerateAI()">✨ Generate Automatically</button>
         </div>
         <div id="lpAIStatus" class="lp-ai-status"></div>
       </div>
@@ -2098,9 +2098,10 @@ table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px so
 
 
 /* ══════════════════════════════════════════
-   AI LESSON PLAN GENERATOR
-   Uses same-origin /api/generate-lesson-plan.
-   API key is never stored in this PWA.
+   OFFLINE SMART LESSON PLAN GENERATOR
+   No API key • No internet • No paid service
+   Generates editable content locally from Class,
+   Subject and Chapter using built-in teaching templates.
 ══════════════════════════════════════════ */
 function lpAISetStatus(message, type='ok'){
   const el=document.getElementById('lpAIStatus');
@@ -2114,7 +2115,18 @@ function lpAIInput(){
   const chapter=document.getElementById('lpChapter')?.value?.trim()||'';
   return {cls,subject,chapter};
 }
-async function lpGenerateAI(){
+function lpSmartTopic(chapter){
+  const c=chapter.toLowerCase();
+  const maps=[
+    {keys:['exception','error handling'],concepts:'Types of errors and exceptions; try, except, else and finally blocks; raising and handling exceptions; importance of graceful error handling.',out:'Students will identify common runtime errors, distinguish errors from exceptions, write exception-handling statements, trace the flow of try-except-else-finally, and apply error handling to simple programs.',strategy:'Interactive explanation followed by code tracing, teacher demonstration, guided coding, pair activity, debugging examples, questioning and short practice tasks.',dev:['Introduction to exceptions through familiar real-life error situations.','Demonstration of try-except-else-finally with simple Python programs.','Hands-on debugging and creation of small exception-handling programs.'],integration:'Mathematics: numerical calculations and invalid input; English: precise technical communication; ICT: safe and reliable computing.',assessment:'Oral questioning; code-tracing questions; identify-the-error tasks; write short Python programs; exit ticket.',resources:'Computer/laptop, Python IDLE or IDE, projector, textbook, board and sample programs.',real:'Input validation in forms, banking/ATM systems, online transactions, file operations and applications that must continue safely after invalid input.',skills:'Problem solving, computational thinking, debugging, collaboration, responsible use of technology and resilience while correcting errors.'},
+    {keys:['file handling','files','text file','csv'],concepts:'Files and file storage; text and binary files; opening and closing files; file modes; reading, writing and appending; file pointers and common file methods.',out:'Students will explain persistent data storage, select suitable file modes, read and write file contents, use common file methods, and develop small file-based programs.',strategy:'Demonstration, think-pair-share, guided coding, file-operation tracing, hands-on practice and debugging.',dev:['Need for persistent data and types of files.','Demonstration of file modes and read/write operations.','Hands-on creation of a small file-processing program.'],integration:'Mathematics: tabular data; English: structured text; Economics/Commerce: record keeping and transaction data.',assessment:'MCQs, output prediction, code completion, practical task and short viva.',resources:'Computer lab, Python IDE, sample text/CSV files, projector and textbook.',real:'Student records, attendance files, bills, reports, logs and data exchange between applications.',skills:'Computational thinking, data literacy, problem solving, accuracy, collaboration and digital responsibility.'},
+    {keys:['database','sql','mysql','dbms'],concepts:'Database concepts; tables, records and fields; keys; relational model; SQL commands for creating, retrieving, updating and deleting data.',out:'Students will describe a database, identify table components and keys, formulate basic SQL queries, retrieve relevant records, and understand the role of databases in applications.',strategy:'Concept mapping, live SQL demonstration, query prediction, guided practice, pair work and problem-based exercises.',dev:['Introduction to databases using real-world record systems.','Understanding tables, fields, records and keys through examples.','Writing and testing SQL queries on sample data.'],integration:'Mathematics: data organization; Commerce: transaction records; ICT: information systems.',assessment:'SQL query writing, output prediction, MCQs, practical database task and oral questioning.',resources:'MySQL/SQL environment, sample database, projector, textbook and worksheets.',real:'School records, banking systems, online shopping, hospital records and library management.',skills:'Data literacy, logical reasoning, problem solving, accuracy, collaboration and ethical handling of information.'},
+    {keys:['python','programming','function','loop','list','dictionary','string'],concepts:'Core programming concepts related to the chapter; syntax and semantics; variables/data structures; control flow; functions or operations relevant to the topic; debugging and testing.',out:'Students will explain the key programming constructs, trace program execution, write syntactically correct programs, test outputs, identify errors and modify code to solve a problem.',strategy:'Code walkthrough, dry run, live demonstration, guided practice, pair programming, debugging challenge and reflection.',dev:['Connect the chapter with previously learned programming concepts.','Demonstrate the new construct with progressively difficult examples.','Learners solve and debug a short programming problem independently.'],integration:'Mathematics: logical and numerical problem solving; Science: computational models; English: algorithmic communication.',assessment:'Dry-run questions, code completion, output prediction, practical coding task and exit ticket.',resources:'Python IDE, projector, computer lab, textbook, worksheets and sample programs.',real:'Automation, data processing, school records, calculations, information systems and everyday problem-solving applications.',skills:'Computational thinking, logical reasoning, creativity, debugging, collaboration and digital literacy.'},
+    {keys:['artificial intelligence','machine learning','data science','ai','ml'],concepts:'Meaning and applications of the topic; data and patterns; basic workflow; examples; benefits, limitations, responsible use and human oversight.',out:'Students will explain the core idea, identify real-world applications, interpret simple examples, distinguish appropriate and inappropriate uses, and discuss responsible and ethical use.',strategy:'Story-based introduction, real-world examples, think-pair-share, visual explanation, activity-based learning, discussion and reflection.',dev:['Elicit prior knowledge through familiar AI examples.','Explain the concept using a simple real-world scenario.','Learners analyze an example and discuss benefits, limitations and responsible use.'],integration:'Mathematics: patterns and data; Social Science: societal impact; English: communication and critical evaluation.',assessment:'Scenario-based questions, MCQs, concept map, group activity and short reflection.',resources:'Projector, diagrams, textbook, curated examples, worksheets and computer/mobile devices where appropriate.',real:'Voice assistants, recommendation systems, fraud detection, healthcare support, education tools, translation and smart devices.',skills:'Critical thinking, creativity, collaboration, communication, digital citizenship, ethical reasoning and problem solving.'}
+  ];
+  return maps.find(x=>x.keys.some(k=>c.includes(k))) || maps[maps.length-1];
+}
+function lpGenerateAI(){
   const {cls,subject,chapter}=lpAIInput();
   if(!cls||!subject||!chapter){
     lpAISetStatus('Please enter/select Class, Subject and Chapter Name first.','err');
@@ -2122,37 +2134,30 @@ async function lpGenerateAI(){
   }
   const btn=document.getElementById('lpAIGenerateBtn');
   if(btn)btn.disabled=true;
-  lpAISetStatus('Generating the lesson plan… please wait.','ok');
+  lpAISetStatus('Creating your lesson plan locally…','ok');
   try{
-    const res=await fetch('./api/generate-lesson-plan',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({className:cls,subject,chapter})
-    });
-    const raw=await res.text();
-    let data={};
-    try{data=JSON.parse(raw)}catch(e){}
-    if(!res.ok)throw new Error(data.error||'AI service returned an error.');
-    const p=data.lessonPlan||data;
-    const set=(id,val)=>{const e=document.getElementById(id);if(e&&val!==undefined&&val!==null)e.value=Array.isArray(val)?val.join('\\n'):String(val)};
-    set('lpPeriods',p.periods);
-    set('lpConcepts',p.concepts);
-    set('lpOutcomes',p.learningOutcomes);
-    set('lpStrategies',p.pedagogicalStrategies);
-    set('lpDevConcept1',p.developerConcept1);
-    set('lpDevConcept2',p.developerConcept2);
-    set('lpDevConcept3',p.developerConcept3);
-    set('lpIntegration',p.integration);
-    set('lpAssessment',p.assessment);
-    set('lpResources',p.resources);
-    set('lpRealLife',p.realLifeApplications);
-    set('lpSkills',p.skills);
-    set('lpRemedialPeriods',p.remedialPeriods);
-    set('lpRemedialConcepts',p.remedialConcepts);
-    lpAISetStatus('✓ Lesson plan generated. Review/edit the fields, then Save or Print.','ok');
+    const t=lpSmartTopic(chapter);
+    const periods=(/project|practical|database|file handling/i.test(chapter)?3:2);
+    const students=document.getElementById('lpStudents')?.value;
+    const set=(id,val)=>{const e=document.getElementById(id);if(e&&val!==undefined&&val!==null)e.value=Array.isArray(val)?val.join('\n'):String(val)};
+    set('lpPeriods',periods);
+    set('lpConcepts',t.concepts);
+    set('lpOutcomes',t.out);
+    set('lpStrategies',t.strategy);
+    set('lpDevConcept1',t.dev[0]);
+    set('lpDevConcept2',t.dev[1]);
+    set('lpDevConcept3',t.dev[2]);
+    set('lpIntegration',t.integration);
+    set('lpAssessment',t.assessment);
+    set('lpResources',t.resources);
+    set('lpRealLife',t.real);
+    set('lpSkills',t.skills);
+    set('lpRemedialPeriods',1);
+    set('lpRemedialConcepts','Students needing support will revisit the key concepts through simplified examples, guided practice and one-to-one feedback.');
+    lpAISetStatus('✓ Lesson plan generated offline. Review/edit the fields, then Save or Print. No API key was used.','ok');
   }catch(err){
     console.error(err);
-    lpAISetStatus('AI generation failed: '+(err.message||'Unknown error')+' Make sure the API is deployed and OPENAI_API_KEY is configured.','err');
+    lpAISetStatus('Generation failed: '+(err.message||'Unknown error'),'err');
   }finally{
     if(btn)btn.disabled=false;
   }
