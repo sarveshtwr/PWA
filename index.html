@@ -1874,6 +1874,18 @@ window.addEventListener('load',()=>{const d=document.getElementById('ccrDate');i
 @media(max-width:1050px){.lp-shell{grid-template-columns:1fr}.lp-library{order:-1}.lp-list{max-height:260px}}
 @media(max-width:800px){.lp-grid2,.lp-grid3,.lp-concepts,.lp-content-grid,.lp-four-grid,.lp-reflect,.lp-self-grid{grid-template-columns:1fr}.lp-head{display:block}.lp-head .lp-actions{margin-top:12px}.lp-search{grid-template-columns:1fr 1fr}.lp-search input{grid-column:1/-1}}
 @media print{#lessonPlanModule{padding:0}.lp-shell{display:block}.lp-card{box-shadow:none;border:0}.lp-head,.lp-library,.lp-note{display:none}.lp-form{padding:0}.lp-field input,.lp-field select,.lp-field textarea,.lp-cell textarea,.lp-cell input[type=text]{border:0;background:transparent;padding:0;box-shadow:none}.lp-attach{display:none}}
+
+<style id="lp-ai-style">
+.lp-ai-panel{margin:12px 0 0;padding:14px;border:1px solid #c7d2fe;border-radius:14px;background:linear-gradient(135deg,#eef2ff,#f8fbff)}
+.lp-ai-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+.lp-ai-title{font-weight:900;color:#3730a3;font-size:.9rem}.lp-ai-sub{font-size:.67rem;color:#636b85;margin-top:3px;line-height:1.45}
+.lp-ai-btn{border:0;border-radius:10px;padding:11px 16px;background:#4f46e5;color:#fff;font-weight:900;cursor:pointer;box-shadow:0 5px 14px rgba(79,70,229,.18)}
+.lp-ai-btn:disabled{opacity:.6;cursor:wait}
+.lp-ai-status{display:none;margin-top:9px;padding:8px 10px;border-radius:9px;font-size:.68rem;line-height:1.4}
+.lp-ai-status.ok{display:block;background:#ecfdf5;color:#166534;border:1px solid #bbf7d0}
+.lp-ai-status.err{display:block;background:#fff1f2;color:#9f1239;border:1px solid #fecdd3}
+@media(max-width:700px){.lp-ai-row{grid-template-columns:1fr}.lp-ai-btn{width:100%}}
+</style>
 </style>
 
 <div class="lp-shell">
@@ -1899,6 +1911,16 @@ window.addEventListener('load',()=>{const d=document.getElementById('ccrDate');i
           <div class="lp-field"><label>No. of students in the class</label><input id="lpStudents" type="number" min="0"></div>
           <div class="lp-field"><label>Lesson Plan Developer (Name)</label><input id="lpDeveloper" value="SARVESH TIWARI"></div>
         </div>
+      </div>
+      <div class="lp-ai-panel">
+        <div class="lp-ai-row">
+          <div>
+            <div class="lp-ai-title">✨ AI Lesson Plan Generator</div>
+            <div class="lp-ai-sub">Enter Class, Subject and Chapter Name, then generate the remaining lesson-plan content automatically. You can edit everything before saving or printing.</div>
+          </div>
+          <button type="button" class="lp-ai-btn" id="lpAIGenerateBtn" onclick="lpGenerateAI()">✨ Generate with AI</button>
+        </div>
+        <div id="lpAIStatus" class="lp-ai-status"></div>
       </div>
       <div class="lp-section"><div class="lp-section-title"><span>02</span> Source of LP — Concept 1, 2 & 3</div>
         <div class="lp-concepts">
@@ -2072,6 +2094,68 @@ table{border-collapse:collapse;width:100%;table-layout:fixed}th,td{border:1px so
 </div></body></html>`;
   w.document.open();w.document.write(html);w.document.close();
   w.onload=()=>setTimeout(()=>{w.focus();w.print();},250);
+}
+
+
+/* ══════════════════════════════════════════
+   AI LESSON PLAN GENERATOR
+   Uses same-origin /api/generate-lesson-plan.
+   API key is never stored in this PWA.
+══════════════════════════════════════════ */
+function lpAISetStatus(message, type='ok'){
+  const el=document.getElementById('lpAIStatus');
+  if(!el)return;
+  el.textContent=message;
+  el.className='lp-ai-status '+type;
+}
+function lpAIInput(){
+  const cls=document.getElementById('lpClass')?.value?.trim()||'';
+  const subject=document.getElementById('lpSubject')?.value?.trim()||'';
+  const chapter=document.getElementById('lpChapter')?.value?.trim()||'';
+  return {cls,subject,chapter};
+}
+async function lpGenerateAI(){
+  const {cls,subject,chapter}=lpAIInput();
+  if(!cls||!subject||!chapter){
+    lpAISetStatus('Please enter/select Class, Subject and Chapter Name first.','err');
+    return;
+  }
+  const btn=document.getElementById('lpAIGenerateBtn');
+  if(btn)btn.disabled=true;
+  lpAISetStatus('Generating the lesson plan… please wait.','ok');
+  try{
+    const res=await fetch('./api/generate-lesson-plan',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({className:cls,subject,chapter})
+    });
+    const raw=await res.text();
+    let data={};
+    try{data=JSON.parse(raw)}catch(e){}
+    if(!res.ok)throw new Error(data.error||'AI service returned an error.');
+    const p=data.lessonPlan||data;
+    const set=(id,val)=>{const e=document.getElementById(id);if(e&&val!==undefined&&val!==null)e.value=Array.isArray(val)?val.join('\\n'):String(val)};
+    set('lpPeriods',p.periods);
+    set('lpConcepts',p.concepts);
+    set('lpOutcomes',p.learningOutcomes);
+    set('lpStrategies',p.pedagogicalStrategies);
+    set('lpDevConcept1',p.developerConcept1);
+    set('lpDevConcept2',p.developerConcept2);
+    set('lpDevConcept3',p.developerConcept3);
+    set('lpIntegration',p.integration);
+    set('lpAssessment',p.assessment);
+    set('lpResources',p.resources);
+    set('lpRealLife',p.realLifeApplications);
+    set('lpSkills',p.skills);
+    set('lpRemedialPeriods',p.remedialPeriods);
+    set('lpRemedialConcepts',p.remedialConcepts);
+    lpAISetStatus('✓ Lesson plan generated. Review/edit the fields, then Save or Print.','ok');
+  }catch(err){
+    console.error(err);
+    lpAISetStatus('AI generation failed: '+(err.message||'Unknown error')+' Make sure the API is deployed and OPENAI_API_KEY is configured.','err');
+  }finally{
+    if(btn)btn.disabled=false;
+  }
 }
 
 </script>
