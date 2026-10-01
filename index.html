@@ -1916,11 +1916,21 @@ window.addEventListener('load',()=>{const d=document.getElementById('ccrDate');i
         <div class="lp-ai-row">
           <div>
             <div class="lp-ai-title">✨ Generate with ChatGPT — No API Required</div>
-            <div class="lp-ai-sub">Enter Class, Subject and Chapter Name. The app prepares the complete lesson-plan prompt and opens ChatGPT. No API key or API payment is used.</div>
+            <div class="lp-ai-sub">Enter Class, Subject and Chapter Name. The app opens ChatGPT with a ready prompt. After ChatGPT replies, copy its complete response and paste it below to auto-fill the lesson-plan fields. No API key or API payment is used.</div>
           </div>
           <button type="button" class="lp-ai-btn" id="lpAIGenerateBtn" onclick="lpGenerateAI()">🤖 Generate with ChatGPT</button>
         </div>
         <div id="lpAIStatus" class="lp-ai-status"></div>
+        <div class="lp-ai-import" style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb">
+          <div style="font-weight:900;color:#3730a3;font-size:.82rem">📥 Paste ChatGPT Response</div>
+          <div style="font-size:.67rem;color:#636b85;margin:3px 0 7px;line-height:1.45">Copy ChatGPT's complete response and paste it below. The matching lesson-plan columns will be filled automatically.</div>
+          <textarea id="lpAIResponse" placeholder="Paste the complete ChatGPT response here..." onpaste="setTimeout(lpParseChatGPTResponse,80)" oninput="lpAIResponseTyping()" style="width:100%;min-height:130px;box-sizing:border-box;border:1px solid #c7d2fe;border-radius:9px;padding:9px;font:inherit;resize:vertical;background:#fff"></textarea>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+            <button type="button" class="lp-btn primary" onclick="lpParseChatGPTResponse()">⚡ Fill Lesson Plan Fields</button>
+            <button type="button" class="lp-btn" onclick="lpPasteAndParseChatGPTResponse()">📋 Paste from Clipboard & Fill</button>
+            <button type="button" class="lp-btn" onclick="document.getElementById('lpAIResponse').value='';lpAISetStatus('Response box cleared.','ok')">Clear Response</button>
+          </div>
+        </div>
       </div>
       <div class="lp-section"><div class="lp-section-title"><span>02</span> Source of LP — Concept 1, 2 & 3</div>
         <div class="lp-concepts">
@@ -2153,7 +2163,9 @@ Requirements:
 - Real-life applications must be directly related to the chapter/topic.
 - Remedial planning should address likely learning gaps.
 - Do not include teacher name, signature, source-of-LP checkboxes, or unnecessary introduction.
-- Do not wrap the answer in a code block.`;
+- Do not wrap the answer in a code block.
+- Keep each numbered heading on its own line exactly as written above.
+- Put only that section's content below each heading, until the next numbered heading.`;
 }
 function lpCopyChatGPTPrompt(){
   const {cls,subject,chapter}=lpAIInput();
@@ -2169,6 +2181,107 @@ function lpCopyChatGPTPrompt(){
   });
   return true;
 }
+function lpAIResponseTyping(){
+  // Keep typing/pasting lightweight; actual parsing happens on paste or button click.
+}
+function lpNormaliseAIKey(line){
+  return String(line||'').replace(/[*_`#]/g,'').replace(/\s+/g,' ').trim().replace(/\s*[:：]\s*$/,'').toLowerCase();
+}
+function lpExtractChatGPTSections(text){
+  const raw=String(text||'').replace(/\r/g,'').trim();
+  if(!raw)return {};
+  const headingDefs=[
+    ['1. No. of periods required',['no. of periods required','number of periods required','periods required']],
+    ['2. Concepts',['concepts']],
+    ['3. Learning Outcomes (NCERT)',['learning outcomes (ncert)','learning outcomes']],
+    ['4. Pedagogical Strategies',['pedagogical strategies','pedagogical strategy']],
+    ['5. Lesson Plan Developer — Concept 1',['lesson plan developer — concept 1','lesson plan developer - concept 1','lesson plan developer concept 1']],
+    ['6. Lesson Plan Developer — Concept 2',['lesson plan developer — concept 2','lesson plan developer - concept 2','lesson plan developer concept 2']],
+    ['7. Lesson Plan Developer — Concept 3',['lesson plan developer — concept 3','lesson plan developer - concept 3','lesson plan developer concept 3']],
+    ['8. Integration with other subjects',['integration with other subjects']],
+    ['9. Assessment (Item Format)',['assessment (item format)','assessment']],
+    ['10. Resources (Digital/Physical)',['resources (digital/physical)','resources']],
+    ['11. Real-life applications',['real-life applications','real life applications','real-life application','real life application']],
+    ['12. 21st Century Skills / Value Education / Vocational Skills',['21st century skills / value education / vocational skills','21st century skills','value education / vocational skills']],
+    ['13. Planning for remedial teaching — No. of periods required',['planning for remedial teaching — no. of periods required','planning for remedial teaching - no. of periods required','remedial teaching — no. of periods required','remedial teaching - no. of periods required']],
+    ['14. Concepts for Which remedial classes are required',['concepts for which remedial classes are required','concepts for which remedial classes are required']]
+  ];
+  const lines=raw.split('\n');
+  const found=[];
+  const normDefs=headingDefs.map(([canon,aliases])=>({canon,aliases:aliases.map(lpNormaliseAIKey)}));
+  lines.forEach((line,i)=>{
+    const cleaned=lpNormaliseAIKey(line).replace(/^\d+\s*[.)-]?\s*/,'').trim();
+    for(const d of normDefs){
+      if(d.aliases.some(a=>cleaned===a || cleaned.startsWith(a+' ') || cleaned.startsWith(a+':'))){
+        found.push({canon:d.canon,index:i}); break;
+      }
+    }
+  });
+  const out={};
+  found.forEach((h,n)=>{
+    const next=found[n+1]?.index ?? lines.length;
+    let val=lines.slice(h.index+1,next).join('\n').trim();
+    // Remove a repeated heading marker/colon immediately after the heading.
+    val=val.replace(/^[:：]\s*/,'').trim();
+    out[h.canon]=val;
+  });
+  return out;
+}
+function lpSetAIField(id,value){
+  const el=document.getElementById(id);
+  if(!el || value==null || value==='')return false;
+  el.value=String(value).trim();
+  el.dispatchEvent(new Event('input',{bubbles:true}));
+  return true;
+}
+function lpParseChatGPTResponse(){
+  const box=document.getElementById('lpAIResponse');
+  const text=box?.value||'';
+  if(!text.trim()){
+    lpAISetStatus('Please paste the complete ChatGPT response first.','err');
+    return false;
+  }
+  const data=lpExtractChatGPTSections(text);
+  const mapping={
+    '1. No. of periods required':'lpPeriods',
+    '2. Concepts':'lpConcepts',
+    '3. Learning Outcomes (NCERT)':'lpOutcomes',
+    '4. Pedagogical Strategies':'lpStrategies',
+    '5. Lesson Plan Developer — Concept 1':'lpDevConcept1',
+    '6. Lesson Plan Developer — Concept 2':'lpDevConcept2',
+    '7. Lesson Plan Developer — Concept 3':'lpDevConcept3',
+    '8. Integration with other subjects':'lpIntegration',
+    '9. Assessment (Item Format)':'lpAssessment',
+    '10. Resources (Digital/Physical)':'lpResources',
+    '11. Real-life applications':'lpRealLife',
+    '12. 21st Century Skills / Value Education / Vocational Skills':'lpSkills',
+    '13. Planning for remedial teaching — No. of periods required':'lpRemedialPeriods',
+    '14. Concepts for Which remedial classes are required':'lpRemedialConcepts'
+  };
+  let count=0;
+  Object.entries(mapping).forEach(([key,id])=>{if(data[key] && lpSetAIField(id,data[key]))count++;});
+  if(count){
+    lpAISetStatus(`✓ ${count} lesson-plan fields filled automatically from the ChatGPT response. Please review and Save.`, 'ok');
+    const first=document.getElementById('lpConcepts');
+    first?.scrollIntoView({behavior:'smooth',block:'center'});
+    return true;
+  }
+  lpAISetStatus('I could not find the expected headings. Please ask ChatGPT to use the exact numbered headings from the prompt, then paste the complete response.','err');
+  return false;
+}
+async function lpPasteAndParseChatGPTResponse(){
+  try{
+    const text=await navigator.clipboard.readText();
+    if(!text.trim()) throw new Error('empty');
+    const box=document.getElementById('lpAIResponse');
+    box.value=text;
+    lpParseChatGPTResponse();
+  }catch(e){
+    lpAISetStatus('Clipboard access was blocked. Copy the ChatGPT response, tap the response box, paste it, and the fields will fill automatically.','err');
+    document.getElementById('lpAIResponse')?.focus();
+  }
+}
+
 function lpGenerateAI(){
   const {cls,subject,chapter}=lpAIInput();
   if(!cls||!subject||!chapter){

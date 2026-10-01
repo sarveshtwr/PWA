@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sarvesh-teacher-manager-chatgpt-noapi-v1';
+const CACHE_NAME = 'sarvesh-teacher-manager-chatgpt-noapi-v2';
 const APP_SHELL = [
   './',
   './index.html',
