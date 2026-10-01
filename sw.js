@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sarvesh-teacher-manager-ai-v2';
+const CACHE_NAME = 'sarvesh-teacher-manager-chatgpt-noapi-v1';
 const APP_SHELL = [
   './',
   './index.html',
@@ -30,7 +30,7 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Never cache the AI API.
+  // External ChatGPT opens in a new tab; no API endpoint is used.
   if (url.pathname.includes('/api/')) return;
 
   event.respondWith(
