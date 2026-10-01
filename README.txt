@@ -1,22 +1,18 @@
-SARVESH TEACHER MANAGER — PWA
+SARVESH TEACHER MANAGER - PWA
 
-This package is a Progressive Web App (PWA) version of the HTML app.
+Files:
+- index.html: complete Teacher Manager app
+- manifest.json: PWA installation configuration
+- sw.js: offline service worker
+- icons/: installation icons
+
+INSTALL / USE:
+1. Upload the contents of this folder to an HTTPS web host (for example GitHub Pages).
+2. Open the HTTPS URL in Chrome/Edge on Android.
+3. Use the browser menu and choose "Install app" or "Add to Home screen".
+4. The app can then open in standalone mode.
 
 IMPORTANT:
-A PWA cannot install service-worker functionality when opened directly as file://.
-It must be served from HTTPS or localhost.
-
-QUICK TEST ON A COMPUTER:
-1. Open a terminal in this folder.
-2. Run a local server, for example:
-   python -m http.server 8080
-3. Open:
-   http://localhost:8080
-4. In Chrome/Edge choose Install App / Add to Home Screen.
-
-FOR PHONE INSTALLATION:
-Host this folder on an HTTPS website/server, open the site in Chrome on Android,
-then use the browser menu -> Install app / Add to Home screen.
-
-The app is designed to work offline after the first successful load.
-LocalStorage data remains on the device/browser profile.
+- App data is stored in the browser's localStorage on each device/browser.
+- Installing the PWA on another device does not automatically copy local data from the first device.
+- The service worker provides offline access after the app has been opened successfully online once.
