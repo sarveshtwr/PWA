@@ -16,3 +16,11 @@ IMPORTANT:
 - App data is stored in the browser's localStorage on each device/browser.
 - Installing the PWA on another device does not automatically copy local data from the first device.
 - The service worker provides offline access after the app has been opened successfully online once.
+
+UPDATED SCHOOL TIMETABLE (SESSION 2026–2027):
+- Reporting Time: 08:20 AM–08:30 AM
+- Morning Assembly: 08:30 AM–08:50 AM
+- Periods 1–4: 08:50 AM–11:30 AM (40 minutes each)
+- Recess: 11:30 AM–12:00 PM
+- Periods 5–8: 12:00 PM–02:40 PM (40 minutes each)
+- Dispersal: 02:40 PM
